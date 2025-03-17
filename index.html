@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+  <meta charset="UTF-8">
+  <title>CryptoZombies front-end</title>
+<link rel="icon" href="favicon.ico">
+  <script language="javascript" type="text/javascript"
+    src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script language="javascript" type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.2.7-rc.0/web3.min.js"></script>
+  <script language="javascript" type="text/javascript" src="cryptozombies_abi.js"></script>
+  <style>
+    *{
+      margin: 0px;
+      padding: 0px;
+    }
+    .main_body{
+      background-color: #2E4F2F;
+      width:100vw;
+      min-height: 100vh;
+    }
+
+    .z_btn{
+      background-color: #7FFF00;
+      padding: 10px;
+      font-size: 20px;
+      border-radius:4px;
+      border:none;
+      width:100%;
+      box-shadow: 0px 12px 0px 0px black;
+    }
+
+    .z_btn:hover{
+      cursor:pointer;
+    }
+
+    .z_btn:active{
+     
+      position: relative;
+      top:6px;
+      box-shadow: 0px 6px 0px 0px black;
+    }
+
+    .btn_cnt
+    {
+      display: flex;
+      /* justify-content: space-around; */
+      gap: 20px;
+      flex-wrap: wrap;
+    }
+    .btn_item{
+      width:30%;
+    }
+
+    .zmb_title{
+      padding-top: 20px;
+      width:100%;
+      height:80px;
+      font-size: 50px;
+      text-align: center;
+      background-color: #D4C5A5;
+      color:rgb(75, 0, 0);
+    }
+
+    .zmb_cnt{
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 10px;
+      /* width:80vw; */
+    }
+
+    .zmb_item{
+      /* width:20vw; */
+      /* background-color: white; */
+    }
+    .main_data{
+      width:80vw;
+      margin-left: 10vw;
+    }
+
+    .card-container {
+            perspective: 1000px;
+        }
+
+        .card {
+            width: 250px;
+            height: 300px;
+            position: relative;
+            transform-style: preserve-3d;
+            transition: transform 0.6s;
+            
+        }
+
+        .card-container:hover .card {
+            transform: rotateY(180deg);
+            cursor: pointer;
+        }
+
+        .card-front, .card-back {
+         
+            width: 80%;
+            /* height: 100%; */
+            position: absolute;
+            backface-visibility: hidden;
+            border-radius: 10px;
+            box-shadow: 0px 0px 21px 5px red;
+            font-size: 20px;
+        }
+
+        /* Front Side */
+        .card-front {
+            background: #cdcdcd;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            /* box-shadow: 0px 0px 21px 5px red; */
+        }
+
+        .card-front img {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            margin-bottom: 15px;
+        }
+
+        .card-front h3 {
+            margin: 5px 0;
+            color: rgb(99, 0, 0);
+        }
+
+        .card-front p {
+            color: rgb(99, 0, 0);
+        }
+
+        /* Back Side */
+        .card-back {
+            background: #cdcdcd;
+            color: rgb(99, 0, 0);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transform: rotateY(180deg);
+            padding: 20px;
+            text-align: center;
+        }
+
+        .card-back h3 {
+            margin-bottom: 10px;
+        }
+
+        .card-back p {
+            margin: 5px 0;
+        }
+
+        .zmb_msg{
+           text-align: center;
+           background-color: rgb(75, 0, 0);
+           color:#D4C5A5;
+           font-size: 20px;
+           min-width:10px;
+           padding: 10px;
+        }
+  </style>
+</head>
+
+<body>
+
+  <div class="main_body">
+
+
+    <div class="zmb_title">
+       Welcome to CryptoZombies 
+    </div>
+    <br >
+    <br >
+
+    <div class="main_data">
+    <div class="btn_cnt">
+           <div class="btn_item"><button class="showZombieButton z_btn">Show Zombies</button></div>
+           <div class="btn_item"> <button class="createzombieButton z_btn">Create Zombie</button></div>
+           <div class="btn_item"><button class="levelupButton z_btn">Level Up</button></div>
+           <div class="btn_item"><button class="deleteButton z_btn">Delete</button></div>
+           <div class="btn_item"><button class="changeNameButton z_btn">Change Name</button></div>
+    </div>
+
+  
+ 
+  <br />
+  <br />
+
+  <div id="txStatus" class="zmb_msg"> </div>
+
+  <br />
+  <br />
+
+  <div id="zombies" class="zmb_cnt"></div>
+</div>
+</div>
+
+ 
+
+  <script>
+
+    var cryptoZombies;
+    var userAccount;
+    var lvl_up_id;
+    const showZombieButton = document.querySelector('.showZombieButton');
+    const createzombieButton = document.querySelector('.createzombieButton');
+    const levelupButton = document.querySelector('.levelupButton');
+    const deleteButton = document.querySelector('.deleteButton');
+    const changeNameButton = document.querySelector('.changeNameButton');
+
+    function startApp() {
+	
+      //ZombieOwnership contratc address
+      var cryptoZombiesAddress = "0xC7eC5c271D760Ea05B2DCF50962c004ef40C8aCC";
+
+      cryptoZombies = new web3.eth.Contract(cryptoZombiesABI, cryptoZombiesAddress);
+
+
+ //the following code from Lesson 6, chapter 5 is obsolete
+ //     var accountInterval = setInterval(function () {
+
+  //      if (web3.eth.accounts[0] !== userAccount) {
+          //userAccount = web3.eth.accounts[0];
+
+     //     getZombiesByOwner(userAccount)
+      //      .then(displayZombies);
+      //  }
+     // }, 100);
+
+      cryptoZombies.events.Transfer({ filter: { _to: userAccount } })
+        .on("data", function (event) {
+          let data = event.returnValues;
+          getZombiesByOwner(userAccount).then(displayZombies);
+        }).on("error", console.error);
+    }
+
+    function displayZombies(ids) {
+      $("#zombies").empty();
+      for (let id of ids) {
+         console.log(id);
+        getZombieDetails(id)
+          .then(function (zombie) {
+            let imageUrl = `https://robohash.org/${zombie.dna}?set=set2&size=150x150`;
+            console.log(zombie);
+            $("#zombies").append(`<div class="zmb_item">
+
+
+             <div class="card-container">
+             <div class="card">
+            <!-- Front Side -->
+            <div class="card-front">
+                <img src=${imageUrl} alt="Profile Photo">
+                <h3>ID: ${id} </h3>
+                <h3>Name: ${zombie.name}</h3>
+            </div>
+
+            <!-- Back Side -->
+            <div class="card-back">
+                <h3>Dna: ${zombie.dna}</h3>
+                <h3>Level: ${zombie.level}</h3>
+                <h3>Wins: ${zombie.winCount}</h3>
+                <h3>Losses: ${zombie.lossCount}</h3>
+                <h3>Ready Time: ${zombie.readyTime}</h3>
+            </div>
+        </div>
+    </div>
+
+             
+            </div>`);
+          });
+      }
+
+    }
+
+    // <img src="${imageUrl}" alt="Zombie Avatar" >
+    //           <ul>
+                
+    //             <li>Name: ${zombie.name}</li>
+    //             <li>Id: ${id} </li>
+    //             <li>DNA: ${zombie.dna}</li>
+    //             <li>Level: ${zombie.level}</li>
+    //             <li>Wins: ${zombie.winCount}</li>
+    //             <li>Losses: ${zombie.lossCount}</li>
+    //             <li>Ready Time: ${zombie.readyTime}</li>
+    //           </ul>
+
+    function createRandomZombie(name) {
+
+
+      $("#txStatus").text("Creating new zombie on the blockchain. This may take a while...");
+
+
+      console.log(userAccount, name);
+      return cryptoZombies.methods.createRandomZombie(name)
+        .send({ from: userAccount })
+        .on("receipt", function (receipt) {
+          $("#txStatus").text("Successfully created " + name + "!");
+
+          getZombiesByOwner(userAccount).then(displayZombies);
+        })
+        .on("error", function (error) {
+            console.log(error);
+          $("#txStatus").text(error);
+        });
+    }
+
+    function changeZombieName(name, id) {
+
+
+$("#txStatus").text("Changing Zombie name. This may take a while...");
+
+
+console.log(userAccount, name);
+return cryptoZombies.methods.changeName(id, name)
+  .send({ from: userAccount })
+  .on("receipt", function (receipt) {
+    $("#txStatus").text("Successfully changed name " + name + "!");
+
+    getZombiesByOwner(userAccount).then(displayZombies);
+  })
+  .on("error", function (error) {
+      console.log(error);
+    $("#txStatus").text("Level should be more than 2");
+  });
+}
+
+    function feedOnKitty(zombieId, kittyId) {
+      $("#txStatus").text("Eating a kitty. This may take a while...");
+      return cryptoZombies.methods.feedOnKitty(zombieId, kittyId)
+        .send({ from: userAccount })
+        .on("receipt", function (receipt) {
+          $("#txStatus").text("Ate a kitty and spawned a new Zombie!");
+          getZombiesByOwner(userAccount).then(displayZombies);
+        })
+        .on("error", function (error) {
+          $("#txStatus").text(error);
+        });
+    }
+
+    function levelUp(zombieId) {
+      // zombieId = lvl_up_id;
+      
+      $("#txStatus").text("Leveling up your zombie...");
+      console.log(zombieId);
+      return cryptoZombies.methods.levelUp(zombieId)
+        .send({ from: userAccount, value: web3.utils.toWei("0.001", "ether") })
+        .on("receipt", function (receipt) {
+          $("#txStatus").text("Power overwhelming! Zombie successfully leveled up");
+          getZombiesByOwner(userAccount).then(displayZombies);
+        })
+        .on("error", function (error) {
+          $("#txStatus").text(error);
+        });
+        
+    }
+
+    function deleteZombie(zombieId) {
+      // zombieId = lvl_up_id;
+      
+      $("#txStatus").text("Deleting up your zombie...");
+      console.log(zombieId);
+      return cryptoZombies.methods.deleteZombie(zombieId)
+        .send({ from: userAccount })
+        .on("receipt", function (receipt) {
+          $("#txStatus").text("Power overwhelming! Zombie successfully deleted");
+          getZombiesByOwner(userAccount).then(displayZombies);
+        })
+        .on("error", function (error) {
+          $("#txStatus").text(error);
+        });
+        
+    }
+
+    function getZombieDetails(id) {
+      return cryptoZombies.methods.zombies(id).call()
+    }
+
+    function zombieToOwner(id) {
+      return cryptoZombies.methods.zombieToOwner(id).call()
+    }
+
+    function getZombiesByOwner(owner) {
+      return cryptoZombies.methods.getZombiesByOwner(owner).call()
+    }
+
+    window.addEventListener('load', async () => {
+    // Modern dapp browsers...
+    if (window.ethereum) {
+        window.web3 = new Web3(ethereum);
+        try {
+            // Request account access if needed
+            const accounts = await ethereum.enable();
+            // Acccounts now exposed
+            userAccount = accounts[0];
+            startApp()
+        } catch (error) {
+            // User denied account access...
+        }
+    }
+    // Legacy dapp browsers...
+    else if (window.web3) {
+        window.web3 = new Web3(web3.currentProvider);
+        // Acccounts always exposed
+        userAccount = web3.eth.accounts[0];
+        startApp()
+    }
+    // Non-dapp browsers...
+    else {
+        console.log('Non-Ethereum browser detected. You should consider trying MetaMask!');
+    }
+   });
+ 
+   //the following code from Lesson 6, chapter 2 is obsolete
+   //metamask no longer inject web3 since early 2021
+   //window.addEventListener('load', function () {
+
+  //    if (typeof web3 !== 'undefined') {
+   //     web3js = new Web3(web3.currentProvider);
+   //   } else {
+    //  }
+
+
+    //  startApp()
+
+  //  }) 
+
+   ethereum.on('accountsChanged', (accounts) => {
+       window.location.reload();
+   });
+
+   ethereum.on('chainChanged', (chainId) => {
+       window.location.reload(); 
+   });  
+
+ 
+    createzombieButton.addEventListener('click', () => {
+      console.log(userAccount);
+      var name = prompt("Enter a name for your new zombie:");
+  if (name && name.trim() !== "") {
+    createRandomZombie(name.trim());
+  } else {
+    alert("Zombie name cannot be empty.");
+  }
+
+    });
+
+    showZombieButton.addEventListener('click', () => {
+      getZombiesByOwner(userAccount)
+            .then(displayZombies);
+
+    });
+
+    levelupButton.addEventListener('click', async() => {
+     
+
+  try{
+
+    const zombies_id = await getZombiesByOwner(userAccount);
+    if (zombies_id.length === 0) {
+      alert("No zombie found");
+      return;
+    }
+
+    let zombie_id = prompt("Enter the zombie Id for level up :");
+
+    let zombie_id_num = zombie_id-0;
+    if (isNaN(zombie_id_num) || !zombies_id.includes(zombie_id)) {
+      alert("Invalid zombie ID. Please enter a valid ID from your zombie list.");
+      return;
+    }
+
+    // Call the levelUp function with the specified zombie ID
+    await levelUp(zombie_id_num);
+
+  }catch (error) {
+    console.error("Error leveling up zombie:", error);
+  }
+      
+
+    });
+
+
+    deleteButton.addEventListener('click', async() => {
+     try{
+       const zombies_id_del = await getZombiesByOwner(userAccount);
+       if (zombies_id_del.length === 0) {
+         alert("No zombie found");
+         return;
+       }
+   
+       let zombie_id_del = prompt("Enter the zombie Id for deleting:");
+   
+       let zombie_id_num_del = zombie_id_del-0;
+       if (isNaN(zombie_id_num_del) || !zombies_id_del.includes(zombie_id_del)) {
+         alert("Invalid zombie ID. Please enter a valid ID from your zombie list.");
+         return;
+       }
+   
+       // Call the levelUp function with the specified zombie ID
+       await deleteZombie(zombie_id_num_del);
+   
+     }catch (error) {
+       console.error("Error deleting up zombie:", error);
+     }
+         
+   
+       });
+
+
+       changeNameButton.addEventListener('click', async() => {
+        // var chng_id=prompt("Enter a name for your new zombie:");
+
+        try{
+       const zombies_id_name_chng = await getZombiesByOwner(userAccount);
+       if (zombies_id_name_chng.length === 0) {
+         alert("No zombie found");
+         return;
+       }
+   
+       let zombie_id_name_chng = prompt("Enter the zombie Id for Name Change:");
+   
+       let zombie_id_num_name_chng = zombie_id_name_chng-0;
+       console.log(zombie_id_num_name_chng);
+       if (isNaN(zombie_id_num_name_chng) || !zombies_id_name_chng.includes(zombie_id_name_chng)) {
+         alert("Invalid zombie ID. Please enter a valid ID from your zombie list.");
+         return;
+       }
+   
+       var new_name = prompt("Enter a name for your new zombie:");
+  if (new_name && new_name.trim() === "") {
+    alert("Zombie name cannot be empty.");
+    return;
+    
+  } 
+       await changeZombieName(new_name.trim(), zombie_id_num_name_chng);
+   
+     }catch (error) {
+       console.error("Error changing name of zombie:", error);
+     }
+
+
+       
+   
+       });
+
+
+
+
+  </script>
+</body>
+
+</html>
