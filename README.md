@@ -1,7 +1,7 @@
 Team Members -
 
 Akshit Trivedi (885152926)
-Meet Zaveri (884477886)
+Meet Jhaveri (884477886)
 Dharmil Dhameliya (884448150)
 Vrund Thakkar (829589241)
 
